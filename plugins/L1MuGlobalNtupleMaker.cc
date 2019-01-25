@@ -9,8 +9,15 @@
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
 
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+
 #include "DataFormats/L1DTTrackFinder/interface/L1MuDTChambPhContainer.h"
 #include "DataFormats/L1DTTrackFinder/interface/L1MuDTChambThContainer.h"
+
+#include "DataFormats/L1TrackTrigger/interface/L1TkMuonParticle.h"
+#include "DataFormats/L1TrackTrigger/interface/L1TkMuonParticleFwd.h"
+#include "DataFormats/L1TrackTrigger/interface/L1TkGlbMuonParticle.h"
+#include "DataFormats/L1TrackTrigger/interface/L1TkGlbMuonParticleFwd.h"
 
 #include "DataFormats/L1Trigger/interface/Muon.h"
 #include "DataFormats/L1TMuon/interface/RegionalMuonCand.h"
@@ -36,18 +43,24 @@ L1MuGlobalNtupleMaker::L1MuGlobalNtupleMaker(const edm::ParameterSet& iConfig) :
   _RunningOnData(iConfig.getParameter<bool>("RunningOnData")),
   _PU_scenario(iConfig.getParameter<int>("PileUpScenario")),
   _PileupSrc(iConfig.getParameter<edm::InputTag>("PileupSrc")),
+  _maxGenMuons(iConfig.getParameter<int>("maxGenMuons")),
   _maxL1Muons(iConfig.getParameter<int>("maxL1Muons")),
   _maxBMTFMuons(iConfig.getParameter<int>("maxBMTFMuons")),
   _maxOMTFMuons(iConfig.getParameter<int>("maxOMTFMuons")),
   _maxEMTFMuons(iConfig.getParameter<int>("maxEMTFMuons")),
   _maxDTPrimitives(iConfig.getParameter<int>("maxDTPrimitives")),
+  _maxTkMuons(iConfig.getParameter<int>("maxTkMuons")),
+  _maxTkGlbMuons(iConfig.getParameter<int>("maxTkGlbMuons")),
+  _genParticleToken(consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticle"))),
   _L1MuonToken(consumes<l1t::MuonBxCollection>(iConfig.getParameter<edm::InputTag>("L1muon"))),
-  _bmtfMuonToken(consumes<l1t::RegionalMuonCandBxCollection>(iConfig.getUntrackedParameter<edm::InputTag>("bmtfMuon"))),
-  _omtfMuonToken(consumes<l1t::RegionalMuonCandBxCollection>(iConfig.getUntrackedParameter<edm::InputTag>("omtfMuon"))),
-  _emtfMuonToken(consumes<l1t::RegionalMuonCandBxCollection>(iConfig.getUntrackedParameter<edm::InputTag>("emtfMuon"))),
-  _KbmtfMuonToken(consumes<L1MuKBMTrackCollection>(iConfig.getUntrackedParameter<edm::InputTag>("KbmtfMuon"))),
-  _bmtfPhInputToken = consumes<L1MuDTChambPhContainer>(iConfig.getUntrackedParameter<edm::InputTag>("bmtfInputPhMuon")),
-  _bmtfThInputToken = consumes<L1MuDTChambThContainer>(iConfig.getUntrackedParameter<edm::InputTag>("bmtfInputThMuon"))
+  _bmtfMuonToken(consumes<l1t::RegionalMuonCandBxCollection>(iConfig.getParameter<edm::InputTag>("bmtfMuon"))),
+  _omtfMuonToken(consumes<l1t::RegionalMuonCandBxCollection>(iConfig.getParameter<edm::InputTag>("omtfMuon"))),
+  _emtfMuonToken(consumes<l1t::RegionalMuonCandBxCollection>(iConfig.getParameter<edm::InputTag>("emtfMuon"))),
+  _KbmtfMuonToken(consumes<L1MuKBMTrackCollection>(iConfig.getParameter<edm::InputTag>("KbmtfMuon"))),
+  _bmtfPhInputToken(consumes<L1MuDTChambPhContainer>(iConfig.getParameter<edm::InputTag>("bmtfInputPhMuon"))),
+  _bmtfThInputToken(consumes<L1MuDTChambThContainer>(iConfig.getParameter<edm::InputTag>("bmtfInputThMuon"))),
+  _TkMuonToken(consumes<l1t::L1TkMuonParticleCollection>(iConfig.getParameter<edm::InputTag>("tkMuon"))),
+  _TkGlbMuonToken(consumes<l1t::L1TkGlbMuonParticleCollection>(iConfig.getParameter<edm::InputTag>("tkGlbMuon")))
 {
   _pileupSummaryToken = consumes<std::vector<PileupSummaryInfo> >(edm::InputTag(_PileupSrc));
 
@@ -77,6 +90,13 @@ void L1MuGlobalNtupleMaker::create_trees()
   else{
     _mytree->Branch("NTruePU",&_NTruePU);
   }
+
+  //Generated muons
+  _mytree->Branch("genmu_pt",&_genmu_pt);
+  _mytree->Branch("genmu_eta",&_genmu_eta);
+  _mytree->Branch("genmu_phi",&_genmu_phi);
+
+  _mytree->Branch("genmu_Nmuons",&_genmu_Nmuons);
 
   //L1 muons
   _mytree->Branch("l1mu_et",&_l1mu_et);
@@ -167,6 +187,24 @@ void L1MuGlobalNtupleMaker::create_trees()
   _mytree->Branch("Inputbmtf_thetaAngle",&_Inputbmtf_thetaAngle);
 
   _mytree->Branch("Inputbmtf_thetaNprimitives",&_Inputbmtf_thetaNprimitives);
+
+  //Track muons
+  _mytree->Branch("tkmu_pt",&_tkmu_pt);
+  _mytree->Branch("tkmu_eta",&_tkmu_eta);
+  _mytree->Branch("tkmu_phi",&_tkmu_phi);
+  _mytree->Branch("tkmu_charge",&_tkmu_charge);
+  _mytree->Branch("tkmu_tkiso",&_tkmu_tkiso);
+
+  _mytree->Branch("tkmu_Nmuons",&_tkmu_Nmuons);
+
+  //Track global muons
+  _mytree->Branch("tkglbmu_pt",&_tkglbmu_pt);
+  _mytree->Branch("tkglbmu_eta",&_tkglbmu_eta);
+  _mytree->Branch("tkglbmu_phi",&_tkglbmu_phi);
+  _mytree->Branch("tkglbmu_charge",&_tkglbmu_charge);
+  _mytree->Branch("tkglbmu_tkiso",&_tkglbmu_tkiso);
+
+  _mytree->Branch("tkglbmu_Nmuons",&_tkglbmu_Nmuons);
 }
 
 void L1MuGlobalNtupleMaker::beginJob()
@@ -188,6 +226,7 @@ void L1MuGlobalNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSe
 {
   _Nevents_processed++;
 
+  edm::Handle<reco::GenParticleCollection> genParticles;
   edm::Handle<l1t::MuonBxCollection> L1muon; 
   edm::Handle<l1t::RegionalMuonCandBxCollection> bmtfMuon;
   edm::Handle<l1t::RegionalMuonCandBxCollection> omtfMuon;
@@ -195,15 +234,25 @@ void L1MuGlobalNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSe
   edm::Handle<L1MuKBMTrackCollection> KbmtfMuon;
   edm::Handle<L1MuDTChambPhContainer > L1MuDTChambPhContainer;
   edm::Handle<L1MuDTChambThContainer > L1MuDTChambThContainer;
+  edm::Handle<l1t::L1TkMuonParticleCollection> TkMuon;
+  edm::Handle<l1t::L1TkGlbMuonParticleCollection> TkGlbMuon;
 
-  iEvent.getByToken(_L1MuonToken,    L1muon);
-  iEvent.getByToken(_bmtfMuonToken,  bmtfMuon);
-  iEvent.getByToken(_omtfMuonToken,  omtfMuon);
-  iEvent.getByToken(_emtfMuonToken,  emtfMuon);
-  iEvent.getByToken(_KbmtfMuonToken, KbmtfMuon);
+  iEvent.getByToken(_genParticleToken, genParticles);
+  iEvent.getByToken(_L1MuonToken,      L1muon);
+  iEvent.getByToken(_bmtfMuonToken,    bmtfMuon);
+  iEvent.getByToken(_omtfMuonToken,    omtfMuon);
+  iEvent.getByToken(_emtfMuonToken,    emtfMuon);
+  iEvent.getByToken(_KbmtfMuonToken,   KbmtfMuon);
   iEvent.getByToken(_bmtfPhInputToken, L1MuDTChambPhContainer);
   iEvent.getByToken(_bmtfThInputToken, L1MuDTChambThContainer);
+  iEvent.getByToken(_TkMuonToken,      TkMuon);
+  iEvent.getByToken(_TkGlbMuonToken,   TkGlbMuon);
 
+  if(genParticles.isValid()){
+    SetGenMuons(genParticles, _maxGenMuons);
+  } else {
+    edm::LogWarning("MissingProduct") << "Generated Muons not found. Branch will not be filled" << std::endl;
+  }
   if(L1muon.isValid()){
     SetL1Muons(L1muon, _maxL1Muons);
   } else {
@@ -239,6 +288,16 @@ void L1MuGlobalNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSe
   } else {
     edm::LogWarning("MissingProduct") << "BMTF Theta inputs not found. Branch will not be filled" << std::endl;
   }
+  if(TkMuon.isValid()){
+    SetTkMuons(TkMuon, _maxTkMuons);
+  } else {
+    edm::LogWarning("MissingProduct") << "L1 Phase2 TkMuons not found. Branch will not be filled" << std::endl;
+  }
+  if(TkGlbMuon.isValid()){
+    SetTkGlbMuons(TkGlbMuon, _maxTkGlbMuons);
+  } else {
+    edm::LogWarning("MissingProduct") << "L1 Phase2 TkGlbMuons not found. Branch will not be filled" << std::endl;
+  }
 
   //Retrieve the run number
   if(_RunningOnData){
@@ -250,6 +309,7 @@ void L1MuGlobalNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSe
   //--------------------------- Pile Up -------------------------//
   //                                                             //
   //*************************************************************//
+  _NTruePU = -1;
   if(!_RunningOnData){
     edm::Handle<std::vector< PileupSummaryInfo>>  PupInfo;
     iEvent.getByLabel(_PileupSrc, PupInfo);
@@ -260,6 +320,7 @@ void L1MuGlobalNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSe
       const int BX = PVI->getBunchCrossing();
       if(BX == 0) {
 	_NTruePU = PVI->getTrueNumInteractions();
+	break;
       }
     }
   }
@@ -267,6 +328,28 @@ void L1MuGlobalNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSe
   _mytree->Fill();
 
 }
+
+void L1MuGlobalNtupleMaker::SetGenMuons(const edm::Handle<reco::GenParticleCollection> genParticles, int maxGenMu)
+{
+  _genmu_pt.clear();
+  _genmu_eta.clear();
+  _genmu_phi.clear();
+
+  _genmu_Nmuons = 0;
+
+  for(size_t i = 0; i < genParticles->size() && _genmu_Nmuons < maxGenMu ; ++ i) {
+    const reco::GenParticle & p = (*genParticles)[i];
+    int id = p.pdgId();
+    if(fabs(id) != 13) continue;
+
+    _genmu_pt.push_back(p.pt());
+    _genmu_eta.push_back(p.eta());
+    _genmu_phi.push_back(p.phi());
+
+    _genmu_Nmuons++;
+  }
+}
+
 
 void L1MuGlobalNtupleMaker::SetL1Muons(const edm::Handle<l1t::MuonBxCollection> muon, int maxL1Upgrade)
 {
@@ -288,6 +371,7 @@ void L1MuGlobalNtupleMaker::SetL1Muons(const edm::Handle<l1t::MuonBxCollection> 
 
   for (int ibx = muon->getFirstBX(); ibx <= muon->getLastBX(); ++ibx) {
     for (l1t::MuonBxCollection::const_iterator it=muon->begin(ibx); it!=muon->end(ibx) && _l1mu_Nmuons < maxL1Upgrade; it++){
+
       if (it->pt() > 0){
 	_l1mu_et.push_back(it->et());
 	_l1mu_eta.push_back(it->eta());
@@ -329,8 +413,8 @@ void L1MuGlobalNtupleMaker::SetBMTFMuons(const edm::Handle<l1t::RegionalMuonCand
 
   for (int ibx = muon->getFirstBX(); ibx <= muon->getLastBX(); ++ibx) {
     for (l1t::RegionalMuonCandBxCollection::const_iterator it = muon->begin(ibx); it != muon->end(ibx) && _bmtfmu_Nmuons < maxBMTFUpgrade; ++it){
-      if (it->hwPt() > 0) {
 
+      if (it->hwPt() > 0) {
 	_bmtfmu_hwpt.push_back(it->hwPt());
 	_bmtfmu_hweta.push_back(it->hwEta());
 	_bmtfmu_hwphi.push_back(it->hwPhi());
@@ -484,14 +568,17 @@ void L1MuGlobalNtupleMaker::SetBMTFPhiInputs(const edm::Handle<L1MuDTChambPhCont
 
   _Inputbmtf_phiNprimitives = PhContainer->size();
 
+  int iphtr = 0;
+
   for( L1MuDTChambPhContainer::Phi_Container::const_iterator DTPhDigiItr =  PhContainer->begin(); DTPhDigiItr != PhContainer->end(); ++DTPhDigiItr) {
-    if((unsigned int) iphtr>maxDTPrimitives-1) continue;
+    if( iphtr > maxDTPrimitives-1) continue;
+    iphtr += 1;
     _Inputbmtf_phiBX.push_back(DTPhDigiItr->bxNum());
     _Inputbmtf_phiWheel.push_back(DTPhDigiItr->whNum());
     _Inputbmtf_phiSector.push_back(DTPhDigiItr->scNum());
     _Inputbmtf_phiStation.push_back(DTPhDigiItr->stNum());
-    _Inputbmtf_phiAng.push_back(DTPhDigiItr->phi());
-    _Inputbmtf_phiBandAng.push_back(DTPhDigiItr->phiB());
+    _Inputbmtf_phiAngle.push_back(DTPhDigiItr->phi());
+    _Inputbmtf_phiBandAngle.push_back(DTPhDigiItr->phiB());
   }
 }
 
@@ -507,8 +594,11 @@ void L1MuGlobalNtupleMaker::SetBMTFThetaInputs(const edm::Handle<L1MuDTChambThCo
 
   _Inputbmtf_thetaNprimitives = ThContainer->size();
 
+  int ithtr = 0;
+
   for( L1MuDTChambThContainer::The_Container::const_iterator DTThDigiItr =  ThContainer->begin(); DTThDigiItr != ThContainer->end();++DTThDigiItr){
-    if((unsigned int) ithtr>maxDTPrimitives-1) continue;
+    if(ithtr > maxDTPrimitives-1) continue;
+    ithtr += 1;
     _Inputbmtf_thetaBX.push_back(DTThDigiItr->bxNum());
     _Inputbmtf_thetaWheel.push_back(DTThDigiItr->whNum());
     _Inputbmtf_thetaSector.push_back(DTThDigiItr->scNum());
@@ -522,9 +612,61 @@ void L1MuGlobalNtupleMaker::SetBMTFThetaInputs(const edm::Handle<L1MuDTChambThCo
       ss1<<DTThDigiItr->position(j);
       ss2<<DTThDigiItr->code(j) ;
     }
-    _Inputbmtf_thetaAng.push_back(stoi(ss1.str()));
+    _Inputbmtf_thetaAngle.push_back(stoi(ss1.str()));
 
   }
+}
+
+void L1MuGlobalNtupleMaker::SetTkMuons(const edm::Handle<l1t::L1TkMuonParticleCollection> muon, int maxTkMuons)
+{
+  _tkmu_pt.clear();
+  _tkmu_eta.clear();
+  _tkmu_phi.clear();
+  _tkmu_charge.clear();
+  _tkmu_tkiso.clear();
+
+  _tkmu_Nmuons = 0;
+
+  for (l1t::L1TkMuonParticleCollection::const_iterator it=muon->begin(); it!=muon->end() && _tkmu_Nmuons < maxTkMuons; it++){
+
+    if (it->pt() > 0){
+      _tkmu_pt.push_back(it->pt());
+      _tkmu_eta.push_back(it->eta());
+      _tkmu_phi.push_back(it->phi());
+      _tkmu_charge.push_back(it->charge());
+      _tkmu_tkiso.push_back(it->getTrkIsol());
+
+      _tkmu_Nmuons++;
+
+    }
+  }
+
+}
+
+void L1MuGlobalNtupleMaker::SetTkGlbMuons(const edm::Handle<l1t::L1TkGlbMuonParticleCollection> muon, int maxTkGlbMuons)
+{
+  _tkglbmu_pt.clear();
+  _tkglbmu_eta.clear();
+  _tkglbmu_phi.clear();
+  _tkglbmu_charge.clear();
+  _tkglbmu_tkiso.clear();
+
+  _tkglbmu_Nmuons = 0;
+
+  for (l1t::L1TkGlbMuonParticleCollection::const_iterator it=muon->begin(); it!=muon->end() && _tkglbmu_Nmuons < maxTkGlbMuons; it++){
+
+    if (it->pt() > 0){
+      _tkglbmu_pt.push_back(it->pt());
+      _tkglbmu_eta.push_back(it->eta());
+      _tkglbmu_phi.push_back(it->phi());
+      _tkglbmu_charge.push_back(it->charge());
+      _tkglbmu_tkiso.push_back(it->getTrkIsol());
+
+      _tkglbmu_Nmuons++;
+
+    }
+  }
+
 }
 
 //define this as a plug-in
