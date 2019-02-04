@@ -3,6 +3,8 @@ import FWCore.ParameterSet.Config as cms
 
 # General config options
 import FWCore.ParameterSet.VarParsing as VarParsing
+import sys
+
 options = VarParsing.VarParsing()
 
 options.register('globalTag',
@@ -23,12 +25,6 @@ options.register('doPhase2Emul',
                  VarParsing.VarParsing.varType.bool,
                  "Run the phase 2 re-emulation")
 
-options.register('doTTrigger',
-                 False, #default value
-                 VarParsing.VarParsing.multiplicity.singleton,
-                 VarParsing.VarParsing.varType.bool,
-                 "Run the track trigger emulation")
-
 options.register('redoPrimitives',
                  False, #default value
                  VarParsing.VarParsing.multiplicity.singleton,
@@ -41,8 +37,11 @@ options.register('runOnMC',
                  VarParsing.VarParsing.varType.bool,
                  "Set to True when running on MC")
 
+options.parseArguments()
+
 from Configuration.StandardSequences.Eras import eras
-if options.doTTrigger :
+if options.doPhase2Emul :
+    print "Using track trigger"
     process = cms.Process('L1',eras.Phase2_trigger)
 else :
     process = cms.Process('L1',eras.Phase2_timing)
@@ -104,8 +103,10 @@ process.TFileService = cms.Service("TFileService",
 
 if options.reEmulation :
     if options.doPhase2Emul : 
+        print "Using Phase-2 emulation"
         process.L1simulation_step = cms.Path(process.phase2_SimL1Emulator)
     else : 
+        print "Using Phase-1 emulation"
         process.L1simulation_step = cms.Path(process.SimL1Emulator)
 
 
@@ -115,9 +116,10 @@ process.endjob_step = cms.EndPath(process.endOfProcess)
 process.schedule = cms.Schedule()
 
 if options.redoPrimitives :
+    print "Regenerating trigger primitives"
     process.schedule.append(process.redoPrimitives_step)
 
-if options.doTTrigger :
+if options.doPhase2Emul :
     process.schedule.append(process.L1TrackTrigger_step)
 
 if options.reEmulation :

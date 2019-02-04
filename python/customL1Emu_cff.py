@@ -14,7 +14,7 @@ def customL1Emu(process, options):
 
         process.redoPrimitives_step = cms.Path(process.simEcalEBTriggerPrimitiveDigis, process.hgcalTriggerPrimitives)
 
-    if options.doTTrigger :
+    if options.doPhase2Emul :
 
         process.load('L1Trigger.TrackFindingTracklet.L1TrackletTracks_cff')
         process.L1TrackTrigger_step = cms.Path(process.L1TrackletTracksWithAssociators)
