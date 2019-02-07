@@ -4,7 +4,7 @@
 
 The code works inside a CMSSW environment. For Setting up the necessary CMSSW environment follow the recipe reported here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideL1TPhase2Instructions#Recipe
 
-The check out the code from this github repository and compile it on top of the CMSSW release:
+Then check out the code from this github repository and compile it on top of the CMSSW release:
 
 ```
 cd $CMSSW_BASE/src/L1Trigger/
