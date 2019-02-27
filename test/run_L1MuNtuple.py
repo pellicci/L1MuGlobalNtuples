@@ -8,7 +8,7 @@ import sys
 options = VarParsing.VarParsing()
 
 options.register('globalTag',
-                 '100X_upgrade2023_realistic_v1', #default value
+                 '103X_upgrade2023_realistic_v2', #default value 
                  VarParsing.VarParsing.multiplicity.singleton,
                  VarParsing.VarParsing.varType.string,
                  "Global Tag")
@@ -39,19 +39,25 @@ options.register('runOnMC',
 
 options.parseArguments()
 
+
+from Configuration.ProcessModifiers.convertHGCalDigisSim_cff import convertHGCalDigisSim
 from Configuration.StandardSequences.Eras import eras
+
+
 if options.doPhase2Emul :
     print "Using track trigger"
-    process = cms.Process('L1',eras.Phase2_trigger)
+    process = cms.Process('L1',eras.Phase2_trigger,convertHGCalDigisSim)
 else :
-    process = cms.Process('L1',eras.Phase2_timing)
+    process = cms.Process('L1',eras.Phase2_timing,convertHGCalDigisSim)
 
+# import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('SimGeneral.MixingModule.mixNoPU_cfi')
 process.load('Configuration.Geometry.GeometryExtended2023D17Reco_cff')
+process.load('Configuration.Geometry.GeometryExtended2023D17_cff')
 process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.SimL1Emulator_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
@@ -74,7 +80,8 @@ process.GlobalTag = GlobalTag(process.GlobalTag, options.globalTag, '')
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
-process.source = cms.Source ("PoolSource",
+# input source
+process.source = cms.Source("PoolSource",
                              fileNames = cms.untracked.vstring ("/store/mc/PhaseIIFall17D/SingleMu_FlatPt-2to100/GEN-SIM-DIGI-RAW/L1TPU140_93X_upgrade2023_realistic_v5-v1/00000/FEB81F89-2239-E811-8D78-0CC47A4DEDD0.root"),
 #                             fileNames = cms.untracked.vstring ("/store/group/upgrade/sandhya/SMP-PhaseIIFall17D-00001.root"),
                              inputCommands = cms.untracked.vstring("keep *", 
@@ -86,6 +93,8 @@ process.source = cms.Source ("PoolSource",
                                                                    "drop l1tEMTFTrack2016s_simEmtfDigis__HLT"
                                                                    )
                              )
+ 
+
 
 #Import the ntuplizer
 process.load("L1Trigger.L1MuGlobalNtuples.L1MuGlobalNtupleMaker_cfi")
