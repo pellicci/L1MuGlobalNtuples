@@ -16,11 +16,12 @@ private:
   void SetBMTFMuons(const edm::Handle<l1t::RegionalMuonCandBxCollection> muon, int maxBMTFUpgrade);
   void SetOMTFMuons(const edm::Handle<l1t::RegionalMuonCandBxCollection> muon, int maxOMTFUpgrade);
   void SetEMTFMuons(const edm::Handle<l1t::RegionalMuonCandBxCollection> muon, int maxEMTFUpgrade);
-  void SetKBMTFMuons(const edm::Handle<L1MuKBMTrackCollection> muon, int maxKBMTFUpgrade);
+  void SetKBMTFMuons(const edm::Handle<l1t::RegionalMuonCandBxCollection> muon, int maxKBMTFUpgrade);
   void SetBMTFPhiInputs(const edm::Handle<L1MuDTChambPhContainer > L1MuDTChambPhContainer, int maxDTPrimitives);
   void SetBMTFThetaInputs(const edm::Handle<L1MuDTChambThContainer > L1MuDTChambThContainer, int maxDTPrimitives);
   void SetTkMuons(const edm::Handle<l1t::L1TkMuonParticleCollection> muon, int maxTkMuons);
   void SetTkGlbMuons(const edm::Handle<l1t::L1TkGlbMuonParticleCollection> muon, int maxTkGlbMuons);
+  void SetTTTracks(const edm::Handle<l1t::L1TkGlbMuonParticleCollection> muon, int maxTTTracks);
 
   bool _RunningOnData;
   int _PU_scenario;
@@ -137,15 +138,16 @@ private:
   short int _emtfmu_Nmuons;
 
   //KBMTF muon
-  std::vector<float> _Kbmtfmu_pt;
-  std::vector<float> _Kbmtfmu_eta;
-  std::vector<float> _Kbmtfmu_phi;
-  std::vector<int>   _Kbmtfmu_dxy;
-  std::vector<int>   _Kbmtfmu_approxChi2;
-  std::vector<short int> _Kbmtfmu_sector;
-  std::vector<short int> _Kbmtfmu_wheel;
-  std::vector<short int> _Kbmtfmu_qual;
+  std::vector<short int> _Kbmtfmu_hwpt;
+  std::vector<short int> _Kbmtfmu_hweta;
+  std::vector<short int> _Kbmtfmu_hwphi;
+  std::vector<short int> _Kbmtfmu_glbphi;
+  std::vector<short int> _Kbmtfmu_hwsign;
+  std::vector<short int> _Kbmtfmu_hwqual;
+  std::vector<short int> _Kbmtfmu_link;
+  std::vector<short int> _Kbmtfmu_processor;
   std::vector<short int> _Kbmtfmu_bx;
+  std::vector<short int> _Kbmtfmu_wheel;
 
   short int _Kbmtfmu_Nmuons;
 
@@ -174,7 +176,7 @@ private:
   edm::EDGetTokenT<l1t::RegionalMuonCandBxCollection> _bmtfMuonToken;
   edm::EDGetTokenT<l1t::RegionalMuonCandBxCollection> _omtfMuonToken;
   edm::EDGetTokenT<l1t::RegionalMuonCandBxCollection> _emtfMuonToken;
-  edm::EDGetTokenT<L1MuKBMTrackCollection> _KbmtfMuonToken;
+  edm::EDGetTokenT<l1t::RegionalMuonCandBxCollection> _KbmtfMuonToken;
   edm::EDGetTokenT<L1MuDTChambPhContainer> _bmtfPhInputToken;
   edm::EDGetTokenT<L1MuDTChambThContainer> _bmtfThInputToken;
   edm::EDGetTokenT<l1t::L1TkMuonParticleCollection> _TkMuonToken;

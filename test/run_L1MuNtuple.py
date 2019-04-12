@@ -59,9 +59,16 @@ process.load('SimGeneral.MixingModule.mixNoPU_cfi')
 process.load('Configuration.Geometry.GeometryExtended2023D17Reco_cff')
 process.load('Configuration.Geometry.GeometryExtended2023D17_cff')
 process.load('Configuration.StandardSequences.MagneticField_cff')
-process.load('Configuration.StandardSequences.SimL1Emulator_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
+process.load('Configuration.StandardSequences.SimL1Emulator_cff')
+process.load('L1Trigger.TrackFindingTracklet.L1TrackletTracks_cff')
+
+
+process.L1TrackTrigger_step = cms.Path(process.L1TrackletTracksWithAssociators)
+process.VertexProducer.l1TracksInputTag = cms.InputTag("TTTracksFromTracklet", "Level1TTTracks")
+
+
 
 # Production Info
 process.configurationMetadata = cms.untracked.PSet(
@@ -82,7 +89,8 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 # input source
 process.source = cms.Source("PoolSource",
-                             fileNames = cms.untracked.vstring ("/store/mc/PhaseIIFall17D/SingleMu_FlatPt-2to100/GEN-SIM-DIGI-RAW/L1TPU140_93X_upgrade2023_realistic_v5-v1/00000/FEB81F89-2239-E811-8D78-0CC47A4DEDD0.root"),
+                              fileNames = cms.untracked.vstring ("/store/relval/CMSSW_9_3_7/RelValBsToMuMu_14TeV/GEN-SIM-DIGI-RAW/93X_upgrade2023_realistic_v5_2023D17noPU-v2/10000/E0FE0A62-B13A-E911-9DFF-AC1F6BAC8158.root"),
+#                             fileNames = cms.untracked.vstring ("/store/mc/PhaseIIFall17D/SingleMu_FlatPt-2to100/GEN-SIM-DIGI-RAW/L1TPU140_93X_upgrade2023_realistic_v5-v1/00000/FEB81F89-2239-E811-8D78-0CC47A4DEDD0.root"),
 #                             fileNames = cms.untracked.vstring ("/store/group/upgrade/sandhya/SMP-PhaseIIFall17D-00001.root"),
                              inputCommands = cms.untracked.vstring("keep *", 
                                                                    "drop l1tHGCalTowerMapBXVector_hgcalTriggerPrimitiveDigiProducer_towerMap_HLT",
@@ -110,6 +118,13 @@ process.TFileService = cms.Service("TFileService",
                                    )
 
 
+# print log
+process.load("FWCore.MessageService.MessageLogger_cfi")
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+process.options = cms.untracked.PSet( wantSummary = cms.untracked.bool(True) )
+
+
+
 if options.reEmulation :
     if options.doPhase2Emul : 
         print "Using Phase-2 emulation"
@@ -120,6 +135,27 @@ if options.reEmulation :
 
 
 process.endjob_step = cms.EndPath(process.endOfProcess)
+
+
+# # --- save emulated objects in a root file 
+# process.outprova = cms.OutputModule("PoolOutputModule",
+#     dataset = cms.untracked.PSet(
+#         #dataTier = cms.untracked.string('GEN-SIM-DIGI-RAW'),
+#         #filterName = cms.untracked.string('')
+#     ),
+#     outputCommands = cms.untracked.vstring("keep *",
+#                                            "drop *_hgcalTriggerPrimitiveDigiProducer_*_*",  
+#                                            "drop l1tEMTFHit2016Extras_simEmtfDigis_CSC_HLT",
+#                                            "drop l1tEMTFHit2016Extras_simEmtfDigis_RPC_HLT",
+#                                            "drop l1tEMTFHit2016s_simEmtfDigis__HLT",
+#                                            "drop l1tEMTFTrack2016Extras_simEmtfDigis__HLT",
+#                                            "drop l1tEMTFTrack2016s_simEmtfDigis__HLT"),
+#     fileName = cms.untracked.string('prova.root'),
+#     splitLevel = cms.untracked.int32(0)
+# )
+# process.outprova_step = cms.EndPath(process.outprova)
+
+
 
 # Schedule definition
 process.schedule = cms.Schedule()
@@ -136,3 +172,6 @@ if options.reEmulation :
 
 process.schedule.append(process.ntuplizer)
 process.schedule.append(process.endjob_step)
+
+# --- save emulated objects in a root file 
+# process.schedule.append(process.outprova_step)

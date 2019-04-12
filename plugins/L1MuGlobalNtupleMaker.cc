@@ -48,6 +48,7 @@ L1MuGlobalNtupleMaker::L1MuGlobalNtupleMaker(const edm::ParameterSet& iConfig) :
   _maxBMTFMuons(iConfig.getParameter<int>("maxBMTFMuons")),
   _maxOMTFMuons(iConfig.getParameter<int>("maxOMTFMuons")),
   _maxEMTFMuons(iConfig.getParameter<int>("maxEMTFMuons")),
+  _maxKBMTFMuons(iConfig.getParameter<int>("maxKBMTFMuons")),
   _maxDTPrimitives(iConfig.getParameter<int>("maxDTPrimitives")),
   _maxTkMuons(iConfig.getParameter<int>("maxTkMuons")),
   _maxTkGlbMuons(iConfig.getParameter<int>("maxTkGlbMuons")),
@@ -56,7 +57,7 @@ L1MuGlobalNtupleMaker::L1MuGlobalNtupleMaker(const edm::ParameterSet& iConfig) :
   _bmtfMuonToken(consumes<l1t::RegionalMuonCandBxCollection>(iConfig.getParameter<edm::InputTag>("bmtfMuon"))),
   _omtfMuonToken(consumes<l1t::RegionalMuonCandBxCollection>(iConfig.getParameter<edm::InputTag>("omtfMuon"))),
   _emtfMuonToken(consumes<l1t::RegionalMuonCandBxCollection>(iConfig.getParameter<edm::InputTag>("emtfMuon"))),
-  _KbmtfMuonToken(consumes<L1MuKBMTrackCollection>(iConfig.getParameter<edm::InputTag>("KbmtfMuon"))),
+  _KbmtfMuonToken(consumes<l1t::RegionalMuonCandBxCollection>(iConfig.getParameter<edm::InputTag>("KbmtfMuon"))),
   _bmtfPhInputToken(consumes<L1MuDTChambPhContainer>(iConfig.getParameter<edm::InputTag>("bmtfInputPhMuon"))),
   _bmtfThInputToken(consumes<L1MuDTChambThContainer>(iConfig.getParameter<edm::InputTag>("bmtfInputThMuon"))),
   _TkMuonToken(consumes<l1t::L1TkMuonParticleCollection>(iConfig.getParameter<edm::InputTag>("tkMuon"))),
@@ -158,15 +159,16 @@ void L1MuGlobalNtupleMaker::create_trees()
   _mytree->Branch("emtfmu_Nmuons",&_emtfmu_Nmuons);
 
   //Kalman BMTF muons
-  _mytree->Branch("Kbmtfmu_pt",&_Kbmtfmu_pt);
-  _mytree->Branch("Kbmtfmu_eta",&_Kbmtfmu_eta);
-  _mytree->Branch("Kbmtfmu_phi",&_Kbmtfmu_phi);
-  _mytree->Branch("Kbmtfmu_dxy",&_Kbmtfmu_dxy);
-  _mytree->Branch("Kbmtfmu_approxChi2",&_Kbmtfmu_approxChi2);
-  _mytree->Branch("Kbmtfmu_sector",&_Kbmtfmu_sector);
-  _mytree->Branch("Kbmtfmu_wheel",&_Kbmtfmu_wheel);
-  _mytree->Branch("Kbmtfmu_qual",&_Kbmtfmu_qual);
+  _mytree->Branch("Kbmtfmu_hwpt",&_Kbmtfmu_hwpt);
+  _mytree->Branch("Kbmtfmu_hweta",&_Kbmtfmu_hweta);
+  _mytree->Branch("Kbmtfmu_hwphi",&_Kbmtfmu_hwphi);
+  _mytree->Branch("Kbmtfmu_glbphi",&_Kbmtfmu_glbphi);
+  _mytree->Branch("Kbmtfmu_hwsign",&_Kbmtfmu_hwsign);
+  _mytree->Branch("Kbmtfmu_hwqual",&_Kbmtfmu_hwqual);
+  _mytree->Branch("Kbmtfmu_link",&_Kbmtfmu_link);
+  _mytree->Branch("Kbmtfmu_processor",&_Kbmtfmu_processor);
   _mytree->Branch("Kbmtfmu_bx",&_Kbmtfmu_bx);
+  _mytree->Branch("Kbmtfmu_wheel",&_Kbmtfmu_wheel);
 
   _mytree->Branch("Kbmtfmu_Nmuons",&_Kbmtfmu_Nmuons);
 
@@ -231,7 +233,7 @@ void L1MuGlobalNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSe
   edm::Handle<l1t::RegionalMuonCandBxCollection> bmtfMuon;
   edm::Handle<l1t::RegionalMuonCandBxCollection> omtfMuon;
   edm::Handle<l1t::RegionalMuonCandBxCollection> emtfMuon;
-  edm::Handle<L1MuKBMTrackCollection> KbmtfMuon;
+  edm::Handle<l1t::RegionalMuonCandBxCollection> KbmtfMuon;
   edm::Handle<L1MuDTChambPhContainer > L1MuDTChambPhContainer;
   edm::Handle<L1MuDTChambThContainer > L1MuDTChambThContainer;
   edm::Handle<l1t::L1TkMuonParticleCollection> TkMuon;
@@ -521,36 +523,43 @@ void L1MuGlobalNtupleMaker::SetEMTFMuons(const edm::Handle<l1t::RegionalMuonCand
   }
 }
 
-void L1MuGlobalNtupleMaker::SetKBMTFMuons(const edm::Handle<L1MuKBMTrackCollection> muon, int maxKBMTFUpgrade)
+void L1MuGlobalNtupleMaker::SetKBMTFMuons(const edm::Handle<l1t::RegionalMuonCandBxCollection> muon, int maxKBMTFUpgrade)
 {
-  _Kbmtfmu_pt.clear();
-  _Kbmtfmu_eta.clear();
-  _Kbmtfmu_phi.clear();
-  _Kbmtfmu_dxy.clear();
-  _Kbmtfmu_approxChi2.clear();
-  _Kbmtfmu_sector.clear();
-  _Kbmtfmu_wheel.clear();
-  _Kbmtfmu_qual.clear();
+  _Kbmtfmu_hwpt.clear();
+  _Kbmtfmu_hweta.clear();
+  _Kbmtfmu_hwphi.clear();
+  _Kbmtfmu_glbphi.clear();
+  _Kbmtfmu_hwsign.clear();
+  _Kbmtfmu_hwqual.clear();
+  _Kbmtfmu_link.clear();
+  _Kbmtfmu_processor.clear();
   _Kbmtfmu_bx.clear();
+  _Kbmtfmu_wheel.clear();
 
   _Kbmtfmu_Nmuons = 0;
 
-    for (L1MuKBMTrackCollection::const_iterator it = muon->begin(); it != muon->end() && _Kbmtfmu_Nmuons < maxKBMTFUpgrade; ++it){
-      if (it->pt() > 0) {
+  for (int ibx = muon->getFirstBX(); ibx <= muon->getLastBX(); ++ibx) {
+    for (l1t::RegionalMuonCandBxCollection::const_iterator it = muon->begin(ibx); it != muon->end(ibx) && _Kbmtfmu_Nmuons < maxKBMTFUpgrade; ++it){
 
-	_Kbmtfmu_pt.push_back(it->pt());
-	_Kbmtfmu_eta.push_back(it->eta());
-	_Kbmtfmu_phi.push_back(it->phi());
-	_Kbmtfmu_dxy.push_back(it->dxy());
-	_Kbmtfmu_approxChi2.push_back(it->approxChi2());
-	_Kbmtfmu_sector.push_back(it->sector());
-	_Kbmtfmu_wheel.push_back(it->wheel());
-	_Kbmtfmu_qual.push_back(it->quality());
+      if (it->hwPt() > 0) {
+	_Kbmtfmu_hwpt.push_back(it->hwPt());
+	_Kbmtfmu_hweta.push_back(it->hwEta());
+	_Kbmtfmu_hwphi.push_back(it->hwPhi());
+	_Kbmtfmu_glbphi.push_back(l1t::MicroGMTConfiguration::calcGlobalPhi(it->hwPhi(),it->trackFinderType(),it->processor()));
+	_Kbmtfmu_hwsign.push_back(it->hwSign());
+	_Kbmtfmu_hwqual.push_back(it->hwQual());
+	_Kbmtfmu_link.push_back(it->link());
+	_Kbmtfmu_processor.push_back(it->processor());
+	_Kbmtfmu_bx.push_back(ibx);
 
-	_Kbmtfmu_bx.push_back(it->bx());
+        std::map<int, int>  trAdd;
+        trAdd = it->trackAddress();
+        int wheel = pow(-1,trAdd[0]) * trAdd[1];
+	_Kbmtfmu_wheel.push_back(wheel);
 
 	_Kbmtfmu_Nmuons++;
 
+      }
     }
   }
 }
