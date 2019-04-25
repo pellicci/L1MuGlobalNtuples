@@ -13,8 +13,8 @@ L1MuGlobalNtupleMaker = cms.EDAnalyzer('L1MuGlobalNtupleMaker',
                                   KbmtfMuon          = cms.InputTag("simKBmtfDigis","BMTF"),
                                   bmtfInputPhMuon    = cms.InputTag("simDtTriggerPrimitiveDigis",""),
                                   bmtfInputThMuon    = cms.InputTag("simDtTriggerPrimitiveDigis",""),
-                                  tkMuon             = cms.InputTag("simGmtStage2Digis",""),
-                                  tkGlbMuon          = cms.InputTag("simGmtStage2Digis",""),
+                                  tkMuon             = cms.InputTag("L1TkMuons",""),                   #filled only if doPhase2Emul=true
+                                  tkGlbMuon          = cms.InputTag("L1TkGlbMuons",""),                #filled only if doPhase2Emul=true
                                   tttracks           = cms.InputTag("TTTracksFromTracklet","Level1TTTracks"),
                                   maxGenMuons        = cms.int32(8),
                                   maxL1Muons         = cms.int32(8),
