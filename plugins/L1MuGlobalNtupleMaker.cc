@@ -23,6 +23,8 @@
 #include "DataFormats/L1TMuon/interface/RegionalMuonCand.h"
 #include "DataFormats/L1TMuon/interface/L1MuKBMTrack.h"
 
+#include "DataFormats/L1TrackTrigger/interface/TTTrack.h"
+
 #include "L1Trigger/L1TMuon/interface/MicroGMTConfiguration.h"
   
 #include "FWCore/Framework/interface/EDAnalyzer.h"
@@ -35,6 +37,7 @@
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
 typedef math::XYZTLorentzVector LorentzVector;
+typedef vector<TTTrack<edm::Ref<edm::DetSetVector<Phase2TrackerDigi>,Phase2TrackerDigi,edm::refhelper::FindForDetSetVector<Phase2TrackerDigi> > > > TTTracksCollection;
 
 #include "L1MuGlobalNtupleMaker.h"
  
@@ -52,6 +55,7 @@ L1MuGlobalNtupleMaker::L1MuGlobalNtupleMaker(const edm::ParameterSet& iConfig) :
   _maxDTPrimitives(iConfig.getParameter<int>("maxDTPrimitives")),
   _maxTkMuons(iConfig.getParameter<int>("maxTkMuons")),
   _maxTkGlbMuons(iConfig.getParameter<int>("maxTkGlbMuons")),
+  _maxTTTracks(iConfig.getParameter<int>("maxTTTracks")),
   _genParticleToken(consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticle"))),
   _L1MuonToken(consumes<l1t::MuonBxCollection>(iConfig.getParameter<edm::InputTag>("L1muon"))),
   _bmtfMuonToken(consumes<l1t::RegionalMuonCandBxCollection>(iConfig.getParameter<edm::InputTag>("bmtfMuon"))),
@@ -61,7 +65,8 @@ L1MuGlobalNtupleMaker::L1MuGlobalNtupleMaker(const edm::ParameterSet& iConfig) :
   _bmtfPhInputToken(consumes<L1MuDTChambPhContainer>(iConfig.getParameter<edm::InputTag>("bmtfInputPhMuon"))),
   _bmtfThInputToken(consumes<L1MuDTChambThContainer>(iConfig.getParameter<edm::InputTag>("bmtfInputThMuon"))),
   _TkMuonToken(consumes<l1t::L1TkMuonParticleCollection>(iConfig.getParameter<edm::InputTag>("tkMuon"))),
-  _TkGlbMuonToken(consumes<l1t::L1TkGlbMuonParticleCollection>(iConfig.getParameter<edm::InputTag>("tkGlbMuon")))
+  _TkGlbMuonToken(consumes<l1t::L1TkGlbMuonParticleCollection>(iConfig.getParameter<edm::InputTag>("tkGlbMuon"))),
+  _TTTracksToken(consumes<TTTracksCollection>(iConfig.getParameter<edm::InputTag>("tttracks")))
 {
   _pileupSummaryToken = consumes<std::vector<PileupSummaryInfo> >(edm::InputTag(_PileupSrc));
 
@@ -207,6 +212,15 @@ void L1MuGlobalNtupleMaker::create_trees()
   _mytree->Branch("tkglbmu_tkiso",&_tkglbmu_tkiso);
 
   _mytree->Branch("tkglbmu_Nmuons",&_tkglbmu_Nmuons);
+
+  //TTTracks
+  _mytree->Branch("tttracks_pt",&_tttracks_pt);
+  _mytree->Branch("tttracks_eta",&_tttracks_eta);
+  _mytree->Branch("tttracks_phi",&_tttracks_phi);
+  _mytree->Branch("tttracks_chi2",&_tttracks_chi2);
+
+  _mytree->Branch("tttracks_Nmuons",&_tttracks_Nmuons);
+
 }
 
 void L1MuGlobalNtupleMaker::beginJob()
@@ -238,6 +252,7 @@ void L1MuGlobalNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSe
   edm::Handle<L1MuDTChambThContainer > L1MuDTChambThContainer;
   edm::Handle<l1t::L1TkMuonParticleCollection> TkMuon;
   edm::Handle<l1t::L1TkGlbMuonParticleCollection> TkGlbMuon;
+  edm::Handle<TTTracksCollection> Tttrack;
 
   iEvent.getByToken(_genParticleToken, genParticles);
   iEvent.getByToken(_L1MuonToken,      L1muon);
@@ -249,6 +264,7 @@ void L1MuGlobalNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSe
   iEvent.getByToken(_bmtfThInputToken, L1MuDTChambThContainer);
   iEvent.getByToken(_TkMuonToken,      TkMuon);
   iEvent.getByToken(_TkGlbMuonToken,   TkGlbMuon);
+  iEvent.getByToken(_TTTracksToken,    Tttrack);
 
   if(genParticles.isValid()){
     SetGenMuons(genParticles, _maxGenMuons);
@@ -299,6 +315,11 @@ void L1MuGlobalNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSe
     SetTkGlbMuons(TkGlbMuon, _maxTkGlbMuons);
   } else {
     edm::LogWarning("MissingProduct") << "L1 Phase2 TkGlbMuons not found. Branch will not be filled" << std::endl;
+  }
+  if(Tttrack.isValid()){
+    SetTTTracks(Tttrack, _maxTTTracks);
+  } else{
+    edm::LogWarning("MissingProduct") << "L1 Phase2 Tttrack not found. Branch will not be filled" << std::endl;
   }
 
   //Retrieve the run number
@@ -672,6 +693,30 @@ void L1MuGlobalNtupleMaker::SetTkGlbMuons(const edm::Handle<l1t::L1TkGlbMuonPart
       _tkglbmu_tkiso.push_back(it->getTrkIsol());
 
       _tkglbmu_Nmuons++;
+
+    }
+  }
+
+}
+
+void L1MuGlobalNtupleMaker::SetTTTracks(const edm::Handle<TTTracksCollection> muon, int maxTTTracks)
+{
+  _tttracks_pt.clear();
+  _tttracks_eta.clear();
+  _tttracks_phi.clear();
+  _tttracks_chi2.clear();
+
+  _tttracks_Nmuons = 0;
+
+  for (TTTracksCollection::const_iterator it=muon->begin(); it!=muon->end() && _tttracks_Nmuons < maxTTTracks; it++){
+
+    if (it->getMomentum().perp() > 0){
+      _tttracks_pt.push_back(it->getMomentum().perp()); //particle pT
+      _tttracks_eta.push_back(it->getMomentum().eta());
+      _tttracks_phi.push_back(it->getMomentum().phi());
+      _tttracks_chi2.push_back(it->getChi2());
+
+      _tttracks_Nmuons++;
 
     }
   }
