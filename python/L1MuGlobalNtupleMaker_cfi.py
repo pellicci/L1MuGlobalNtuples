@@ -16,6 +16,7 @@ L1MuGlobalNtupleMaker = cms.EDAnalyzer('L1MuGlobalNtupleMaker',
                                   tkMuon             = cms.InputTag("L1TkMuons",""),                          #filled only if doPhase2Emul=true
                                   tkGlbMuon          = cms.InputTag("L1TkGlbMuons",""),                       #filled only if doPhase2Emul=true
                                   tttracks           = cms.InputTag("TTTracksFromTracklet","Level1TTTracks"), #filled only if doPhase2Emul=true
+                                  trkG4Parts         = cms.InputTag("mix","MergedTrackTruth","HLT"),          #G4 tracking particles
                                   maxGenMuons        = cms.int32(8),
                                   maxL1Muons         = cms.int32(8),
                                   maxBMTFMuons       = cms.int32(8),
@@ -26,4 +27,5 @@ L1MuGlobalNtupleMaker = cms.EDAnalyzer('L1MuGlobalNtupleMaker',
                                   maxTkMuons         = cms.int32(8),
                                   maxTkGlbMuons      = cms.int32(8),
                                   maxTTTracks        = cms.int32(8),
+                                  maxTrkG4Parts      = cms.int32(8),
                                  )

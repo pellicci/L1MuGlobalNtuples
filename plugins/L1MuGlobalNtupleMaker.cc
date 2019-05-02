@@ -24,6 +24,8 @@
 #include "DataFormats/L1TMuon/interface/L1MuKBMTrack.h"
 
 #include "DataFormats/L1TrackTrigger/interface/TTTrack.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticleFwd.h"
 
 #include "L1Trigger/L1TMuon/interface/MicroGMTConfiguration.h"
   
@@ -56,6 +58,7 @@ L1MuGlobalNtupleMaker::L1MuGlobalNtupleMaker(const edm::ParameterSet& iConfig) :
   _maxTkMuons(iConfig.getParameter<int>("maxTkMuons")),
   _maxTkGlbMuons(iConfig.getParameter<int>("maxTkGlbMuons")),
   _maxTTTracks(iConfig.getParameter<int>("maxTTTracks")),
+  _maxTrkG4Parts(iConfig.getParameter<int>("maxTrkG4Parts")),
   _genParticleToken(consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticle"))),
   _L1MuonToken(consumes<l1t::MuonBxCollection>(iConfig.getParameter<edm::InputTag>("L1muon"))),
   _bmtfMuonToken(consumes<l1t::RegionalMuonCandBxCollection>(iConfig.getParameter<edm::InputTag>("bmtfMuon"))),
@@ -66,7 +69,8 @@ L1MuGlobalNtupleMaker::L1MuGlobalNtupleMaker(const edm::ParameterSet& iConfig) :
   _bmtfThInputToken(consumes<L1MuDTChambThContainer>(iConfig.getParameter<edm::InputTag>("bmtfInputThMuon"))),
   _TkMuonToken(consumes<l1t::L1TkMuonParticleCollection>(iConfig.getParameter<edm::InputTag>("tkMuon"))),
   _TkGlbMuonToken(consumes<l1t::L1TkGlbMuonParticleCollection>(iConfig.getParameter<edm::InputTag>("tkGlbMuon"))),
-  _TTTracksToken(consumes<TTTracksCollection>(iConfig.getParameter<edm::InputTag>("tttracks")))
+  _TTTracksToken(consumes<TTTracksCollection>(iConfig.getParameter<edm::InputTag>("tttracks"))),
+  _TrkG4PartsToken(consumes<TrackingParticleCollection>(iConfig.getParameter<edm::InputTag>("trkG4Parts")))
 {
   _pileupSummaryToken = consumes<std::vector<PileupSummaryInfo> >(edm::InputTag(_PileupSrc));
 
@@ -221,6 +225,14 @@ void L1MuGlobalNtupleMaker::create_trees()
 
   _mytree->Branch("tttracks_Nmuons",&_tttracks_Nmuons);
 
+  //TrkG4Parts
+  _mytree->Branch("trkG4Parts_pt",&_trkG4Parts_pt);
+  _mytree->Branch("trkG4Parts_eta",&_trkG4Parts_eta);
+  _mytree->Branch("trkG4Parts_phi",&_trkG4Parts_phi);
+  _mytree->Branch("trkG4Parts_pdgId",&_trkG4Parts_pdgId);
+
+  _mytree->Branch("trkG4Parts_Nmuons",&_trkG4Parts_Nmuons);
+
 }
 
 void L1MuGlobalNtupleMaker::beginJob()
@@ -253,6 +265,7 @@ void L1MuGlobalNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSe
   edm::Handle<l1t::L1TkMuonParticleCollection> TkMuon;
   edm::Handle<l1t::L1TkGlbMuonParticleCollection> TkGlbMuon;
   edm::Handle<TTTracksCollection> Tttrack;
+  edm::Handle<TrackingParticleCollection> TrkG4Part;
 
   iEvent.getByToken(_genParticleToken, genParticles);
   iEvent.getByToken(_L1MuonToken,      L1muon);
@@ -265,6 +278,7 @@ void L1MuGlobalNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSe
   iEvent.getByToken(_TkMuonToken,      TkMuon);
   iEvent.getByToken(_TkGlbMuonToken,   TkGlbMuon);
   iEvent.getByToken(_TTTracksToken,    Tttrack);
+  iEvent.getByToken(_TrkG4PartsToken,  TrkG4Part);
 
   if(genParticles.isValid()){
     SetGenMuons(genParticles, _maxGenMuons);
@@ -320,6 +334,11 @@ void L1MuGlobalNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSe
     SetTTTracks(Tttrack, _maxTTTracks);
   } else{
     edm::LogWarning("MissingProduct") << "L1 Phase2 Tttrack not found. Branch will not be filled" << std::endl;
+  }
+  if(TrkG4Part.isValid()){
+    SetTrkG4Parts(TrkG4Part, _maxTrkG4Parts);
+  } else{
+    edm::LogWarning("MissingProduct") << "L1 Phase2 TrkG4Part not found. Branch will not be filled" << std::endl;
   }
 
   //Retrieve the run number
@@ -720,6 +739,31 @@ void L1MuGlobalNtupleMaker::SetTTTracks(const edm::Handle<TTTracksCollection> mu
 
     }
   }
+
+}
+
+void L1MuGlobalNtupleMaker::SetTrkG4Parts(const edm::Handle<TrackingParticleCollection> muon, int maxTrkG4Parts)
+{
+  _trkG4Parts_pt.clear();
+  _trkG4Parts_eta.clear();
+  _trkG4Parts_phi.clear();
+  _trkG4Parts_pdgId.clear();
+
+  _trkG4Parts_Nmuons = 0;
+
+  for (TrackingParticleCollection::const_iterator it=muon->begin(); it!=muon->end() && _trkG4Parts_Nmuons < maxTrkG4Parts; it++){
+
+    if (it->pt() > 0){
+      _trkG4Parts_pt.push_back(it->pt());
+      _trkG4Parts_eta.push_back(it->eta());
+      _trkG4Parts_phi.push_back(it->phi());
+      _trkG4Parts_pdgId.push_back(it->pdgId());
+
+      _trkG4Parts_Nmuons++;
+
+    }
+  }
+
 
 }
 

@@ -22,6 +22,7 @@ private:
   void SetTkMuons(const edm::Handle<l1t::L1TkMuonParticleCollection> muon, int maxTkMuons);
   void SetTkGlbMuons(const edm::Handle<l1t::L1TkGlbMuonParticleCollection> muon, int maxTkGlbMuons);
   void SetTTTracks(const edm::Handle<TTTracksCollection> muon, int maxTTTracks);
+  void SetTrkG4Parts(const edm::Handle<TrackingParticleCollection> muon, int maxTrkG4Parts);
 
   bool _RunningOnData;
   int _PU_scenario;
@@ -37,6 +38,7 @@ private:
   int _maxTkMuons;
   int _maxTkGlbMuons;
   int _maxTTTracks;
+  int _maxTrkG4Parts;
 
   edm::Service<TFileService> fs;
 
@@ -178,6 +180,14 @@ private:
 
   short int _tttracks_Nmuons;
 
+  //TrkG4Parts
+  std::vector<float> _trkG4Parts_pt;
+  std::vector<float> _trkG4Parts_eta;
+  std::vector<float> _trkG4Parts_phi;
+  std::vector<int>   _trkG4Parts_pdgId;
+
+  short int _trkG4Parts_Nmuons;
+
 
   //Tokens
   edm::EDGetTokenT<std::vector<PileupSummaryInfo> > _pileupSummaryToken;
@@ -192,5 +202,7 @@ private:
   edm::EDGetTokenT<l1t::L1TkMuonParticleCollection> _TkMuonToken;
   edm::EDGetTokenT<l1t::L1TkGlbMuonParticleCollection> _TkGlbMuonToken;
   edm::EDGetTokenT<TTTracksCollection> _TTTracksToken;
+  edm::EDGetTokenT<TrackingParticleCollection> _TrkG4PartsToken;
+  
 
 };
