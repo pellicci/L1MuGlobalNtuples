@@ -18,8 +18,8 @@ config.Data.outLFNDirBase = '/store/user/%s/' % (getUsernameFromSiteDB())
 config.Data.publication = False
 
 config.section_('Site')
-#config.Site.storageSite = 'T2_IT_Legnaro'
-config.Site.storageSite = 'T2_CH_CERN'
+config.Site.storageSite = 'T2_IT_Legnaro'
+#config.Site.storageSite = 'T2_CH_CERN'
 
 if __name__ == '__main__':
 
