@@ -1,4 +1,5 @@
 from WMCore.Configuration import Configuration
+from CRABClient.UserUtilities import config, getUsernameFromSiteDB
 config = Configuration()
 
 config.section_('General')
@@ -6,18 +7,19 @@ config.General.transferOutputs = True
 config.General.workArea = 'crab_projects/samples_MC_phase2/'
 
 config.section_('JobType')
-config.JobType.psetName = 'run_L1MuNtuple.py'
+config.JobType.psetName = '../run_L1MuNtuple.py'
 config.JobType.pluginName = 'Analysis'
 config.JobType.outputFiles = ['L1MuPhase2Ntuple_output.root']
 config.JobType.pyCfgParams = ['doPhase2Emul=True']
 
 config.section_('Data')
 config.Data.splitting = 'FileBased'
-config.Data.outLFNDirBase = '/store/user/pellicci/'
+config.Data.outLFNDirBase = '/store/user/%s/' % (getUsernameFromSiteDB())
 config.Data.publication = False
 
 config.section_('Site')
-config.Site.storageSite = 'T2_IT_Legnaro'
+#config.Site.storageSite = 'T2_IT_Legnaro'
+config.Site.storageSite = 'T2_CH_CERN'
 
 if __name__ == '__main__':
 
