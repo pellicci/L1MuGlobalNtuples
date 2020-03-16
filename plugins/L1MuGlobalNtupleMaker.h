@@ -176,6 +176,7 @@ private:
   std::vector<float> _tttracks_pt;
   std::vector<float> _tttracks_eta;
   std::vector<float> _tttracks_phi;
+  std::vector<int>   _tttracks_phiSector;
   std::vector<float> _tttracks_chi2;  
 
   short int _tttracks_Nmuons;

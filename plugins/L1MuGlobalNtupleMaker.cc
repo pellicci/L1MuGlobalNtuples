@@ -221,6 +221,7 @@ void L1MuGlobalNtupleMaker::create_trees()
   _mytree->Branch("tttracks_pt",&_tttracks_pt);
   _mytree->Branch("tttracks_eta",&_tttracks_eta);
   _mytree->Branch("tttracks_phi",&_tttracks_phi);
+  _mytree->Branch("tttracks_phiSector",&_tttracks_phiSector);
   _mytree->Branch("tttracks_chi2",&_tttracks_chi2);
 
   _mytree->Branch("tttracks_Nmuons",&_tttracks_Nmuons);
@@ -723,6 +724,7 @@ void L1MuGlobalNtupleMaker::SetTTTracks(const edm::Handle<TTTracksCollection> mu
   _tttracks_pt.clear();
   _tttracks_eta.clear();
   _tttracks_phi.clear();
+  _tttracks_phiSector.clear();
   _tttracks_chi2.clear();
 
   _tttracks_Nmuons = 0;
@@ -733,6 +735,7 @@ void L1MuGlobalNtupleMaker::SetTTTracks(const edm::Handle<TTTracksCollection> mu
       _tttracks_pt.push_back(it->getMomentum().perp()); //particle pT
       _tttracks_eta.push_back(it->getMomentum().eta());
       _tttracks_phi.push_back(it->getMomentum().phi());
+      _tttracks_phiSector.push_back(it->getSector());
       _tttracks_chi2.push_back(it->getChi2());
 
       _tttracks_Nmuons++;
